@@ -47,8 +47,6 @@ string compute(string equation, int location) {
 
     //Second number will always begin one character after the operator until the next operator (or the rest of the equation if there is no other operator)
     double num2 = stod(equation.substr(location + 1, endOp - location - 1));
-    
-    cout << "Num1: " << num1 << endl << "Num 2: " << num2 << endl << "Op: " << op << endl;
 
     //Performs the operation and stores the result in string b
     string b;
@@ -263,7 +261,17 @@ string solve(string equation) {
 }
 
 int main() {
-    string equation = "-5.78+-(4-2.23)+sin(0)*cos(1)/(1+tan(2*ln(-3+2*(1.23+99.111))))";
-    string solution = solve(equation);
-    cout << "Result: " << solution << endl;
+    string equation;
+
+    while (true) {
+        cout << "Enter your equation (\"exit\" to exit): ";
+        cin >> equation;
+
+        if (equation == "exit" || equation == "Exit")
+            break;
+
+        string solution = solve(equation);
+        cout << "Result: " << solution << endl;
+    }
+    return 0;
 }
