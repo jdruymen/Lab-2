@@ -1,3 +1,8 @@
+/*
+* Joshua Ruymen
+* 9/30
+* Vajda CS480
+*/
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -5,6 +10,16 @@
 using namespace std;
 
 #define PI 3.14159265
+
+//Determines if the given character is 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, or .
+bool isNumber(char c) {
+    if (c == 46)
+        return true;
+    else if (c >= 48 && c <= 57)
+        return true;
+    else
+        return false;
+}
 
 //Removes excess trailing 0's generated from to_string(), taken from https://stackoverflow.com/questions/13686482/c11-stdto-stringdouble-no-trailing-zeros
 string trim(string number) {
@@ -89,7 +104,6 @@ string compute(string equation, int location) {
 
 //Solves the given equation and returns the result as a string
 string solve(string equation) {
-    //Deals with parenthesis and brackets
     //Checks if there is any opening parenthesis/brackets
     int openP = equation.find_first_of("({");
     if (openP != string::npos) {
@@ -123,18 +137,23 @@ string solve(string equation) {
         return solve(a + b + c);
     }
 
+    //Checks if there are any of the beginning letters from sin, cos, tan, or cot
     int trig = equation.find_first_of("sct");
     if (trig != string::npos) {
+        //Retrieves the full 3 letters from the trig function
         string trigo = equation.substr(trig, 3);
+        //Determines the end of the number used in the trig function
         int endTrig = equation.find_first_not_of("1234567890.", trig + 3);
         double number;
         string b;
 
+        //Saves the number that will be used to calculate
         if (endTrig != string::npos)
             number = stod(equation.substr(trig + 3, endTrig - trig - 3));
         else
             number = stod(equation.substr(trig + 3, equation.length()));
 
+        //Multiplies all numbers by PI / 180 to convert from radians to degrees
         if (trigo == "sin")
             b = to_string(sin(number * PI / 180.0));
         else if (trigo == "cos")
@@ -146,6 +165,7 @@ string solve(string equation) {
         else
             return "Error in input: only sin, cos, tan, cot, ln, and log are accepted (case sensitive).";
 
+        //Saves (if any) the portions of the equation before and after the trig functions calculation
         string a = equation.substr(0, trig);
         string c = "";
         if (endTrig != string::npos)
@@ -153,13 +173,17 @@ string solve(string equation) {
 
         b = trim(b);
 
+        //Solves the rest of the equation after the trig function has been calculated
         return solve(a + b + c);
     }
 
+    //Checks if there are any "l"s, which should only be used for natural and base 10 logs
     int logLocation = equation.find_first_of("l");
     if (logLocation != string::npos) {
         bool natural;
         int length;
+
+        //Determines if the user entered a natural or base 10 log
         if (equation.at(logLocation + 1) == 'n') {
             natural = true;
             length = 2;
@@ -174,19 +198,23 @@ string solve(string equation) {
 
         double number;
 
+        //Finds the end of the number that will be used in the logarithm
         int endLog = equation.find_first_not_of("1234567890.", logLocation + length);
         
+        //Determines the number that will be used
         if (endLog != string::npos)
             number = stod(equation.substr(logLocation + length, endLog - logLocation - length));
         else
             number = stod(equation.substr(logLocation + length, equation.length()));
 
+        //Computes the logarithm
         string b;
         if (natural)
             b = to_string(log(number));
         else
             b = to_string(log10(number));
 
+        //Saves (if any) the portions of the equation before and after the logarithm
         string a = equation.substr(0, logLocation);
         string c = "";
         if (endLog != string::npos)
@@ -194,15 +222,24 @@ string solve(string equation) {
         
         b = trim(b);
 
+        //Solves the rest of the equation after the logarithm has been calculated
         return solve(a + b + c);
     }
 
+    //Removes duplicate "-" symbols, and replaces with a + when appropriate
     int operation = equation.find_first_of("-");
     while (operation != string::npos) {
         if (operation != equation.length()) {
             if (equation.at(operation + 1) == '-') {
-                equation.replace(operation, 2, "+");
-                operation = equation.find_first_of("-");
+                if (operation == 0) {
+                    equation.erase(operation, 2);
+                }
+                else if (isNumber(equation.at(operation - 1))) {
+                    equation.replace(operation, 2, "+");
+                }
+                else {
+                    equation.erase(operation, 2);
+                }
             }
 
             else
@@ -212,6 +249,7 @@ string solve(string equation) {
             break;
     }
 
+    //Calculates all "^" operations
     operation = equation.find_first_of("^");
     while (operation != string::npos) {
         equation = compute(equation, operation);
@@ -219,6 +257,7 @@ string solve(string equation) {
         operation = equation.find_first_of('^');
     }
     
+    //Calculates all "*" operations
     operation = equation.find_first_of("*");
     while (operation != string::npos) {
         equation = compute(equation, operation);
@@ -226,6 +265,7 @@ string solve(string equation) {
         operation = equation.find_first_of('*');
     }
 
+    //Calculates all "/" operations
     operation = equation.find_first_of("/");
     while (operation != string::npos) {
         equation = compute(equation, operation);
@@ -233,18 +273,18 @@ string solve(string equation) {
         operation = equation.find_first_of('/');
     }
 
+    //Calculates all "+" operations
     operation = equation.find_first_of("+");
     while (operation != string::npos) {
-        if (operation == 0)
-            equation.erase(0);
-        else
-            equation = compute(equation, operation);
+        equation = compute(equation, operation);
 
         operation = equation.find_first_of('+');
     }
 
+    //Calculates all "-" operations, multiple "-" in a row should already have been dealt with
     operation = equation.find_first_of("-");
     while (operation != string::npos) {
+        //Ignores "-" when it is the first character, that only indicates that the first number is negative
         if (operation == 0) {
             operation = equation.find_first_of('-', operation + 1);
             continue;
