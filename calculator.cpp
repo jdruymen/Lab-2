@@ -33,6 +33,10 @@ string trim(string number) {
 string compute(string equation, int location) {
     //The operator we are going to use on the numbers (^, *, /, +, -)
     char op = equation.at(location);
+
+    if (location == 0)
+        return "Error: tried to perform operation on only one number.";
+
     //The ending location of the second number
     int endOp = equation.find_first_not_of("1234567890.", location + 1);
 
@@ -73,6 +77,9 @@ string compute(string equation, int location) {
         b = to_string(num1 * num2);
         break;
     case '/':
+        //Makes sure we never try to divide by 0
+        if (num2 == 0)
+            return "Error: attempted to divide by 0";
         b = to_string(num1 / num2);
         break;
     case '+':
@@ -104,6 +111,10 @@ string compute(string equation, int location) {
 
 //Solves the given equation and returns the result as a string
 string solve(string equation) {
+    //Checks if an invalid character was entered
+    if (equation.find_first_not_of("1234567890.^*/+-(){}sincotalg") != string::npos)
+        return "Error in input: invalid character entered.";
+
     //Checks if there is any opening parenthesis/brackets
     int openP = equation.find_first_of("({");
     if (openP != string::npos) {
@@ -137,13 +148,27 @@ string solve(string equation) {
         return solve(a + b + c);
     }
 
+    if (equation.find_first_of(")}") != string::npos)
+        return "Error: too many closing parenthesis.";
+
     //Checks if there are any of the beginning letters from sin, cos, tan, or cot
     int trig = equation.find_first_of("sct");
     if (trig != string::npos) {
+        //Checks if the letter is at the end of the equation. If it is, that means that the input is invalid as it cannot be any of the trig functions.
+        if (trig == equation.length() || trig == equation.length() - 1)
+            return "Error in input: only sin, cos, tan, cot, ln, and log are accepted (case sensitive).";
+        else if (trig == equation.length() - 2)
+            return "Error in input: trig function called on no numbers (at the end of the equation).";
+
         //Retrieves the full 3 letters from the trig function
         string trigo = equation.substr(trig, 3);
         //Determines the end of the number used in the trig function
         int endTrig = equation.find_first_not_of("1234567890.", trig + 3);
+
+        //Checks if the number is negative and moves the pointer to the end of the number accordingly
+        if (endTrig == trig + 3)
+            endTrig = equation.find_first_not_of("1234567890.", endTrig + 1);
+
         double number;
         string b;
 
@@ -180,6 +205,10 @@ string solve(string equation) {
     //Checks if there are any "l"s, which should only be used for natural and base 10 logs
     int logLocation = equation.find_first_of("l");
     if (logLocation != string::npos) {
+        //Checks if the letter is at the end of the equation. If it is, that means that the input is invalid as it cannot be either log or ln.
+        if (logLocation == equation.length() || logLocation == equation.length() - 1)
+            return "Error in input: only sin, cos, tan, cot, ln, and log are accepted (case sensitive).";
+
         bool natural;
         int length;
 
@@ -200,12 +229,20 @@ string solve(string equation) {
 
         //Finds the end of the number that will be used in the logarithm
         int endLog = equation.find_first_not_of("1234567890.", logLocation + length);
-        
+
+        //Checks if the number is negative and moves the pointer to the end of the number accordingly
+        if (endLog == logLocation + length)
+            endLog = equation.find_first_not_of("1234567890.", endLog + 1);
+
         //Determines the number that will be used
         if (endLog != string::npos)
             number = stod(equation.substr(logLocation + length, endLog - logLocation - length));
         else
             number = stod(equation.substr(logLocation + length, equation.length()));
+
+        //Ensures that the number is within the correct domain of log and ln
+        if (number <= 0)
+            return "Error: attempted to take the log or natural log of a number less than or equal to 0.";
 
         //Computes the logarithm
         string b;
@@ -241,9 +278,7 @@ string solve(string equation) {
                     equation.erase(operation, 2);
                 }
             }
-
-            else
-                operation = equation.find_first_of("-", operation + 1);
+            operation = equation.find_first_of("-", operation + 1);
         }
         else
             break;
